@@ -1,13 +1,7 @@
 package com.sullivankw.LoanBooks.services;
 
-import com.sullivankw.LoanBooks.assemblers.BankAssembler;
-import com.sullivankw.LoanBooks.assemblers.CovenantAssembler;
-import com.sullivankw.LoanBooks.assemblers.FacilityAssembler;
-import com.sullivankw.LoanBooks.assemblers.LoanAssembler;
-import com.sullivankw.LoanBooks.models.Bank;
-import com.sullivankw.LoanBooks.models.Covenant;
-import com.sullivankw.LoanBooks.models.Facility;
-import com.sullivankw.LoanBooks.models.Loan;
+import com.sullivankw.LoanBooks.assemblers.*;
+import com.sullivankw.LoanBooks.models.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.ResourceUtils;
@@ -15,6 +9,7 @@ import org.springframework.util.ResourceUtils;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 @Service
 public class LoanBookService {
@@ -31,12 +26,38 @@ public class LoanBookService {
     @Autowired
     private LoanAssembler loanAssembler;
 
+    @Autowired
+    private AssignmentAssembler assignmentAssembler;
+
+    @Autowired
+    private CsvWriterService writerService;
+
     private static final String CSV_FILE_SEPARATOR = ",";
+
+    public List<Assignment> calculateLoans() throws FileNotFoundException {
+
+        List<Covenant> covenants = getCovenants();
+        List<Loan> loans = getLoans();
+        List<Assignment> assignments = new ArrayList<>();
+        for (Loan loan : loans) {
+            Covenant covenant = findAndRemoveMatchingCovenant(loan, covenants); //todo gotta remove and make sure no duplicate
+            Assignment assignment = assignmentAssembler.from(covenant, loan);
+            assignments.add(assignment);
+            //todo still need to remove the covenant
+        }
+        writerService.generateAssignmentCsvFile(assignments);
+        return assignments;
+    }
+
+    private Covenant findAndRemoveMatchingCovenant(Loan loan, List<Covenant> covenants) {
+        return covenants.stream().filter(covenant -> covenant.getBannedState() != loan.getState()
+                && covenant.getMaxDefaultLikelihood() >= loan.getDefaultLikelihood()).findFirst().orElse(null);
+    }
 
     public List<Bank> getBanks() throws FileNotFoundException {
         File file = ResourceUtils.getFile("classpath:banks.csv");
         BufferedReader reader;
-        String line = "";
+        String line;
         boolean readFile = true;
         int counter = 0;
         List<Bank> banks = new ArrayList();
@@ -44,20 +65,24 @@ public class LoanBookService {
             reader = new BufferedReader(new FileReader(file));
             while (readFile) {
                 try {
-                    if (!((line = reader.readLine()) != null))
+                    line = reader.readLine();
+                    if (Objects.isNull(line) || line.equals("")) {
                         readFile = false;
+                    } else {
+                        if (counter > 0) {
+                            String[] row = line.split(CSV_FILE_SEPARATOR);
+                            Bank bank = bankAssembler.from(row);
+                            banks.add(bank);
+                        }
+                        counter++;
+                    }
                 } catch (IOException e) {
                     e.printStackTrace();
+                    throw new RuntimeException("getBanks IOEXCEPTION");
                 }
-                if (counter > 0) {
-                    String[] row = line.split(CSV_FILE_SEPARATOR);
-                    Bank bank = bankAssembler.from(row);
-                    banks.add(bank);
-                }
-                counter++;
             }
         } catch (Exception e) {
-
+            throw new RuntimeException("getBanks");
         }
         return banks;
     }
@@ -65,30 +90,32 @@ public class LoanBookService {
     public List<Facility> getFacilities() throws FileNotFoundException {
         File file = ResourceUtils.getFile("classpath:facilities.csv");
         BufferedReader reader;
-        String line = "";
+        String line;
         boolean readFile = true;
-        int counter = 0;
+        int counter = 0; // don't wanna read the first line
         List<Facility> facilities = new ArrayList();
         try {
             reader = new BufferedReader(new FileReader(file));
             while (readFile) {
                 try {
-                    if (!((line = reader.readLine()) != null))
+                    line = reader.readLine();
+                    if (Objects.isNull(line) || line.equals("")) {
                         readFile = false;
+                    } else {
+                        if (counter > 0) {
+                            String[] row = line.split(CSV_FILE_SEPARATOR);
+                            Facility facility = facilityAssembler.from(row);
+                            facilities.add(facility);
+                        }
+                        counter++;
+                    }
                 } catch (IOException e) {
                     e.printStackTrace();
+                    throw new RuntimeException("getFacility IOEXCEPTION");
                 }
-                if (counter > 0) {
-                    String[] row = line.split(CSV_FILE_SEPARATOR);
-                    Facility facility = facilityAssembler.from(row);
-                    facilities.add(facility);
-                }
-                counter++;
             }
         } catch (Exception e) {
-            //todo mapping from file to object errors here
-            String hi = "hi";
-
+            throw new RuntimeException("getFacility");
         }
         return facilities;
     }
@@ -96,7 +123,7 @@ public class LoanBookService {
     public List<Covenant> getCovenants() throws FileNotFoundException {
         File file = ResourceUtils.getFile("classpath:covenants.csv");
         BufferedReader reader;
-        String line = "";
+        String line;
         boolean readFile = true;
         int counter = 0;
         List<Covenant> covenants = new ArrayList();
@@ -104,21 +131,24 @@ public class LoanBookService {
             reader = new BufferedReader(new FileReader(file));
             while (readFile) {
                 try {
-                    if (!((line = reader.readLine()) != null))
+                    line = reader.readLine();
+                    if (Objects.isNull(line) || line.equals("")) {
                         readFile = false;
+                    } else {
+                        if (counter > 0) {
+                            String[] row = line.split(CSV_FILE_SEPARATOR);
+                            Covenant covenant = covenantAssembler.from(row);
+                            covenants.add(covenant);
+                        }
+                        counter++;
+                    }
                 } catch (IOException e) {
                     e.printStackTrace();
+                    throw new RuntimeException("getCovenants IOEXCEPTION");
                 }
-                if (counter > 0) {
-                    String[] row = line.split(CSV_FILE_SEPARATOR);
-                    Covenant covenant = covenantAssembler.from(row);
-                    covenants.add(covenant);
-                }
-                counter++;
             }
         } catch (Exception e) {
-            //todo mapping from file to object errors here
-            String hi = "hi";
+            throw new RuntimeException("getCovenants");
         }
         return covenants;
     }
@@ -126,7 +156,7 @@ public class LoanBookService {
     public List<Loan> getLoans() throws FileNotFoundException {
         File file = ResourceUtils.getFile("classpath:loans.csv");
         BufferedReader reader;
-        String line = "";
+        String line;
         boolean readFile = true;
         int counter = 0;
         List<Loan> loans = new ArrayList();
@@ -134,21 +164,24 @@ public class LoanBookService {
             reader = new BufferedReader(new FileReader(file));
             while (readFile) {
                 try {
-                    if (!((line = reader.readLine()) != null))
+                    line = reader.readLine();
+                    if (Objects.isNull(line) || line.equals("")) {
                         readFile = false;
+                    } else {
+                        if (counter > 0) {
+                            String[] row = line.split(CSV_FILE_SEPARATOR);
+                            Loan loan = loanAssembler.from(row);
+                            loans.add(loan);
+                        }
+                        counter++;
+                    }
                 } catch (IOException e) {
                     e.printStackTrace();
+                    throw new RuntimeException("getLoans IOEXCEPTION");
                 }
-                if (counter > 0) {
-                    String[] row = line.split(CSV_FILE_SEPARATOR);
-                    Loan loan = loanAssembler.from(row);
-                    loans.add(loan);
-                }
-                counter++;
             }
         } catch (Exception e) {
-            //todo mapping from file to object errors here
-            String hi = "hi";
+            throw new RuntimeException("getLoans");
         }
         return loans;
     }
