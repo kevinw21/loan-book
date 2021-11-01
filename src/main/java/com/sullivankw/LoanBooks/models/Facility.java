@@ -32,4 +32,8 @@ public class Facility {
     public float getAmount() {
         return amount;
     }
+
+    public void setAmount(float amount) {
+        this.amount = amount;
+    }
 }

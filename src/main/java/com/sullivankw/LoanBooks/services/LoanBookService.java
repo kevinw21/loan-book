@@ -1,15 +1,19 @@
 package com.sullivankw.LoanBooks.services;
 
 import com.sullivankw.LoanBooks.assemblers.*;
+import com.sullivankw.LoanBooks.dtos.ResponseDto;
 import com.sullivankw.LoanBooks.models.*;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.ResourceUtils;
 
 import java.io.*;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
+import java.util.stream.Collectors;
+
+import static java.util.Objects.nonNull;
 
 @Service
 public class LoanBookService {
@@ -32,59 +36,90 @@ public class LoanBookService {
     @Autowired
     private CsvWriterService writerService;
 
+    @Autowired
+    private YieldAssembler yieldAssembler;
+
     private static final String CSV_FILE_SEPARATOR = ",";
 
-    public List<Assignment> calculateLoans() throws FileNotFoundException {
+    private static final Logger LOGGER = LogManager.getLogger(LoanBookService.class);
 
+    public ResponseDto getAssignments() throws FileNotFoundException {
         List<Covenant> covenants = getCovenants();
         List<Loan> loans = getLoans();
+        List<Facility> facilities = getFacilities();
         List<Assignment> assignments = new ArrayList<>();
         for (Loan loan : loans) {
-            Covenant covenant = findAndRemoveMatchingCovenant(loan, covenants); //todo gotta remove and make sure no duplicate
-            Assignment assignment = assignmentAssembler.from(covenant, loan);
-            assignments.add(assignment);
-            //todo still need to remove the covenant
+            Facility facility = getBestRateFacilityRemaining(facilities, covenants, loan);
+            if (nonNull(facility)) {
+                Assignment assignment = assignmentAssembler.from(loan, facility);
+                assignments.add(assignment);
+            } else {
+                LOGGER.info("Unable to fund loan %s", loan.getId());
+            }
         }
         writerService.generateAssignmentCsvFile(assignments);
-        return assignments;
+
+        List<Yield> yields = yieldAssembler.from(assignments, loans, facilities);
+
+        writerService.generateYieldCsvFile(yields);
+
+        return new ResponseDto(assignments, yields);
     }
 
-    private Covenant findAndRemoveMatchingCovenant(Loan loan, List<Covenant> covenants) {
-        return covenants.stream().filter(covenant -> covenant.getBannedState() != loan.getState()
-                && covenant.getMaxDefaultLikelihood() >= loan.getDefaultLikelihood()).findFirst().orElse(null);
+    private boolean canFundLoan(Facility facility, List<Covenant> covenants, Loan loan) {
+        List<Covenant> relevantCovenants = getBestRateCovenants(facility, covenants);
+
+        boolean loanIsFromBannedState = relevantCovenants.stream()
+                .anyMatch(c -> loan.getState().equals(c.getBannedState()));
+
+        boolean loanIsOverMaxAllowedLimit = relevantCovenants.stream()
+                .filter(c -> c.getMaxDefaultLikelihood() != null)
+                .anyMatch(d -> loan.getDefaultLikelihood() > d.getMaxDefaultLikelihood());
+
+        boolean insufficientFunds = facility.getAmount() < loan.getAmount();
+
+        return !loanIsFromBannedState && !loanIsOverMaxAllowedLimit && !insufficientFunds;
     }
 
-    public List<Bank> getBanks() throws FileNotFoundException {
-        File file = ResourceUtils.getFile("classpath:banks.csv");
-        BufferedReader reader;
-        String line;
-        boolean readFile = true;
-        int counter = 0;
-        List<Bank> banks = new ArrayList();
-        try {
-            reader = new BufferedReader(new FileReader(file));
-            while (readFile) {
-                try {
-                    line = reader.readLine();
-                    if (Objects.isNull(line) || line.equals("")) {
-                        readFile = false;
-                    } else {
-                        if (counter > 0) {
-                            String[] row = line.split(CSV_FILE_SEPARATOR);
-                            Bank bank = bankAssembler.from(row);
-                            banks.add(bank);
-                        }
-                        counter++;
-                    }
-                } catch (IOException e) {
-                    e.printStackTrace();
-                    throw new RuntimeException("getBanks IOEXCEPTION");
-                }
+
+    private List<Covenant> getBestRateCovenants(Facility bestRateFacility, List<Covenant> covenants) {
+        return covenants.stream()
+                .filter(cov -> bestRateFacility.getFacilityId() == cov.getFacilityId())
+                .collect(Collectors.toList());
+    }
+
+    private Facility getLowestRateFacility(List<Facility> facilities) {
+        return facilities
+                .stream()
+                .min(Comparator.comparing(Facility::getInterestRate))
+                .orElseThrow(NoSuchElementException::new);
+    }
+
+    private Facility getBestRateFacilityRemaining(List<Facility> facilities, List<Covenant> covenants, Loan loan) {
+        Facility facility = getLowestRateFacility(facilities);
+
+        boolean canFundLoan = canFundLoan(facility, covenants, loan);
+
+        if (canFundLoan) {
+            updateFacilityRemainingAmount(loan, facility);
+            return facility; //todo why not breaking out and returning 2?
+        } else {
+            if (facilities.size() > 1) {
+                List<Facility> copy = getCopy(facilities);
+                copy.remove(facility); //this facility cannot support the loan
+                return getBestRateFacilityRemaining(copy, covenants, loan); //todo why is this line running again
             }
-        } catch (Exception e) {
-            throw new RuntimeException("getBanks");
         }
-        return banks;
+        return null;
+    }
+
+    private List<Facility> getCopy(List<Facility> facilities) {
+        return facilities.stream()
+                            .collect(Collectors.toList());
+    }
+
+    private void updateFacilityRemainingAmount(Loan loan, Facility facility) {
+        facility.setAmount(facility.getAmount() - loan.getAmount());
     }
 
     public List<Facility> getFacilities() throws FileNotFoundException {

@@ -1,6 +1,7 @@
 package com.sullivankw.LoanBooks.services;
 
 import com.sullivankw.LoanBooks.models.Assignment;
+import com.sullivankw.LoanBooks.models.Loan;
 import com.sullivankw.LoanBooks.models.Yield;
 import org.springframework.stereotype.Service;
 
@@ -25,7 +26,7 @@ public class CsvWriterService {
     }
 
     public void generateYieldCsvFile(List<Yield> yields) throws FileNotFoundException {
-        try (PrintWriter writer = new PrintWriter("assignments.csv")) {
+        try (PrintWriter writer = new PrintWriter("yields.csv")) {
 
             StringBuilder sb = new StringBuilder();
 

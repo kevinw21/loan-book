@@ -2,7 +2,7 @@ package com.sullivankw.LoanBooks.models;
 
 public class Covenant {
 
-    private int facilityId;
+    private int facilityId; // todo can be null apparently
 
     private Float maxDefaultLikelihood;
 
