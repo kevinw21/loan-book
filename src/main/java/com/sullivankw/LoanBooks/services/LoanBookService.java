@@ -3,6 +3,7 @@ package com.sullivankw.LoanBooks.services;
 import com.sullivankw.LoanBooks.assemblers.*;
 import com.sullivankw.LoanBooks.dtos.LoanBookResponseDto;
 import com.sullivankw.LoanBooks.models.*;
+import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -125,8 +126,6 @@ public class LoanBookService {
     private List<Facility> getFacilities() throws IOException {
         File file = ResourceUtils.getFile("classpath:facilities.csv");
 
-        BufferedReader reader;
-
         String line;
 
         boolean readFile = true;
@@ -135,8 +134,7 @@ public class LoanBookService {
 
         List<Facility> facilities = new ArrayList();
 
-        reader = new BufferedReader(new FileReader(file));
-
+        BufferedReader reader = new BufferedReader(new FileReader(file));
         while (readFile) {
 
             line = reader.readLine();
@@ -152,13 +150,14 @@ public class LoanBookService {
                 counter++;
             }
         }
+
+        reader.close();
+
         return facilities;
     }
 
     private List<Covenant> getCovenants() throws IOException {
         File file = ResourceUtils.getFile("classpath:covenants.csv");
-
-        BufferedReader reader;
 
         String line;
 
@@ -168,7 +167,7 @@ public class LoanBookService {
 
         List<Covenant> covenants = new ArrayList();
 
-        reader = new BufferedReader(new FileReader(file));
+        BufferedReader reader = new BufferedReader(new FileReader(file));
 
         while (readFile) {
 
@@ -185,13 +184,14 @@ public class LoanBookService {
                 counter++;
             }
         }
+
+        reader.close();
+
         return covenants;
     }
 
     private List<Loan> getLoans() throws IOException {
         File file = ResourceUtils.getFile("classpath:loans.csv");
-
-        BufferedReader reader;
 
         String line;
 
@@ -201,7 +201,7 @@ public class LoanBookService {
 
         List<Loan> loans = new ArrayList();
 
-        reader = new BufferedReader(new FileReader(file));
+        BufferedReader reader = new BufferedReader(new FileReader(file));
 
         while (readFile) {
 
@@ -218,6 +218,9 @@ public class LoanBookService {
                 counter++;
             }
         }
+
+        reader.close();
+
         return loans;
     }
 
