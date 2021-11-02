@@ -1,7 +1,6 @@
 package com.sullivankw.LoanBooks.services;
 
 import com.sullivankw.LoanBooks.models.Assignment;
-import com.sullivankw.LoanBooks.models.Loan;
 import com.sullivankw.LoanBooks.models.Yield;
 import org.springframework.stereotype.Service;
 

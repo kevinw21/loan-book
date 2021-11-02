@@ -2,7 +2,7 @@ package com.sullivankw.LoanBooks.models;
 
 public class Facility {
 
-    private float amount; // note the directions say it's an int but the file has a xxx.0 value, so using float
+    private float amount; // note the directions say it's an int but the file (small) has a xxx.0 value, so using float
 
     private float interestRate;
 

@@ -1,7 +1,7 @@
 package com.sullivankw.LoanBooks.services;
 
 import com.sullivankw.LoanBooks.assemblers.*;
-import com.sullivankw.LoanBooks.dtos.ResponseDto;
+import com.sullivankw.LoanBooks.dtos.LoanBookResponseDto;
 import com.sullivankw.LoanBooks.models.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -13,6 +13,7 @@ import java.io.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 
 @Service
@@ -40,8 +41,7 @@ public class LoanBookService {
 
     private static final Logger LOGGER = LogManager.getLogger(LoanBookService.class);
 
-    public ResponseDto getAssignments() throws FileNotFoundException {
-
+    public LoanBookResponseDto getAssignmentsAndYields() throws IOException {
         List<Covenant> covenants = getCovenants();
 
         List<Loan> loans = getLoans();
@@ -68,17 +68,17 @@ public class LoanBookService {
 
         writerService.generateYieldCsvFile(groupedYields);
 
-        return new ResponseDto(assignments, groupedYields);
+        return new LoanBookResponseDto(assignments, groupedYields);
     }
 
     private boolean canFundLoan(Facility facility, List<Covenant> covenants, Loan loan) {
         List<Covenant> relevantCovenants = getBestRateCovenants(facility, covenants);
 
         boolean loanIsFromBannedState = relevantCovenants.stream()
-                .anyMatch(c -> loan.getState().equals(c.getBannedState()));
+                .anyMatch(covenant -> loan.getState().equals(covenant.getBannedState()));
 
         boolean loanIsOverMaxAllowedLimit = relevantCovenants.stream()
-                .filter(c -> c.getMaxDefaultLikelihood() != null)
+                .filter(covenant -> covenant.getMaxDefaultLikelihood() != null)
                 .anyMatch(d -> loan.getDefaultLikelihood() > d.getMaxDefaultLikelihood());
 
         boolean insufficientFunds = facility.getAmount() < loan.getAmount();
@@ -107,122 +107,122 @@ public class LoanBookService {
 
         if (canFundLoan) {
             updateFacilityRemainingAmount(loan, facility);
-            return facility; //todo why not breaking out and returning 2?
+            return facility;
         } else {
             if (facilities.size() > 1) {
                 List<Facility> copy = getCopy(facilities);
                 copy.remove(facility); //this facility cannot support the loan
-                return getBestRateFacilityRemaining(copy, covenants, loan); //todo why is this line running again
+                return getBestRateFacilityRemaining(copy, covenants, loan);
             }
         }
-        return null;
-    }
-
-    private List<Facility> getCopy(List<Facility> facilities) {
-        return facilities.stream()
-                            .collect(Collectors.toList());
+        return null; //no facility can support loan
     }
 
     private void updateFacilityRemainingAmount(Loan loan, Facility facility) {
         facility.setAmount(facility.getAmount() - loan.getAmount());
     }
 
-    public List<Facility> getFacilities() throws FileNotFoundException {
+    private List<Facility> getFacilities() throws IOException {
         File file = ResourceUtils.getFile("classpath:facilities.csv");
+
         BufferedReader reader;
+
         String line;
+
         boolean readFile = true;
+
         int counter = 0; // don't wanna read the first line
+
         List<Facility> facilities = new ArrayList();
-        try {
-            reader = new BufferedReader(new FileReader(file));
-            while (readFile) {
-                try {
-                    line = reader.readLine();
-                    if (Objects.isNull(line) || line.equals("")) {
-                        readFile = false;
-                    } else {
-                        if (counter > 0) {
-                            String[] row = line.split(CSV_FILE_SEPARATOR);
-                            Facility facility = facilityAssembler.from(row);
-                            facilities.add(facility);
-                        }
-                        counter++;
-                    }
-                } catch (IOException e) {
-                    e.printStackTrace();
-                    throw new RuntimeException("getFacility IOEXCEPTION");
+
+        reader = new BufferedReader(new FileReader(file));
+
+        while (readFile) {
+
+            line = reader.readLine();
+
+            if (isNull(line) || line.equals("")) {
+                readFile = false;
+            } else {
+                if (counter > 0) {
+                    String[] row = line.split(CSV_FILE_SEPARATOR);
+                    Facility facility = facilityAssembler.from(row);
+                    facilities.add(facility);
                 }
+                counter++;
             }
-        } catch (Exception e) {
-            throw new RuntimeException("getFacility");
         }
         return facilities;
     }
 
-    public List<Covenant> getCovenants() throws FileNotFoundException {
+    private List<Covenant> getCovenants() throws IOException {
         File file = ResourceUtils.getFile("classpath:covenants.csv");
+
         BufferedReader reader;
+
         String line;
+
         boolean readFile = true;
+
         int counter = 0;
+
         List<Covenant> covenants = new ArrayList();
-        try {
-            reader = new BufferedReader(new FileReader(file));
-            while (readFile) {
-                try {
-                    line = reader.readLine();
-                    if (Objects.isNull(line) || line.equals("")) {
-                        readFile = false;
-                    } else {
-                        if (counter > 0) {
-                            String[] row = line.split(CSV_FILE_SEPARATOR);
-                            Covenant covenant = covenantAssembler.from(row);
-                            covenants.add(covenant);
-                        }
-                        counter++;
-                    }
-                } catch (IOException e) {
-                    e.printStackTrace();
-                    throw new RuntimeException("getCovenants IOEXCEPTION");
+
+        reader = new BufferedReader(new FileReader(file));
+
+        while (readFile) {
+
+            line = reader.readLine();
+
+            if (isNull(line) || line.equals("")) {
+                readFile = false;
+            } else {
+                if (counter > 0) {
+                    String[] row = line.split(CSV_FILE_SEPARATOR);
+                    Covenant covenant = covenantAssembler.from(row);
+                    covenants.add(covenant);
                 }
+                counter++;
             }
-        } catch (Exception e) {
-            throw new RuntimeException("getCovenants");
         }
         return covenants;
     }
 
-    public List<Loan> getLoans() throws FileNotFoundException {
+    private List<Loan> getLoans() throws IOException {
         File file = ResourceUtils.getFile("classpath:loans.csv");
+
         BufferedReader reader;
+
         String line;
+
         boolean readFile = true;
+
         int counter = 0;
+
         List<Loan> loans = new ArrayList();
-        try {
-            reader = new BufferedReader(new FileReader(file));
-            while (readFile) {
-                try {
-                    line = reader.readLine();
-                    if (Objects.isNull(line) || line.equals("")) {
-                        readFile = false;
-                    } else {
-                        if (counter > 0) {
-                            String[] row = line.split(CSV_FILE_SEPARATOR);
-                            Loan loan = loanAssembler.from(row);
-                            loans.add(loan);
-                        }
-                        counter++;
-                    }
-                } catch (IOException e) {
-                    e.printStackTrace();
-                    throw new RuntimeException("getLoans IOEXCEPTION");
+
+        reader = new BufferedReader(new FileReader(file));
+
+        while (readFile) {
+
+            line = reader.readLine();
+
+            if (isNull(line) || line.equals("")) {
+                readFile = false;
+            } else {
+                if (counter > 0) {
+                    String[] row = line.split(CSV_FILE_SEPARATOR);
+                    Loan loan = loanAssembler.from(row);
+                    loans.add(loan);
                 }
+                counter++;
             }
-        } catch (Exception e) {
-            throw new RuntimeException("getLoans");
         }
         return loans;
+    }
+
+    private List<Facility> getCopy(List<Facility> facilities) {
+        return facilities.stream()
+                .collect(Collectors.toList());
     }
 }

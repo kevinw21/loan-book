@@ -4,7 +4,7 @@ public class Yield {
 
     private int facilityId;
 
-    private double expectedYield; //float seems best to me it rounds better
+    private double expectedYield; // double rounds better
 
     public Yield(int facilityId, double expectedYield) {
         this.facilityId = facilityId;
