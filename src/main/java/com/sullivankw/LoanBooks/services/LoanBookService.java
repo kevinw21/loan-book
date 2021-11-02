@@ -3,7 +3,6 @@ package com.sullivankw.LoanBooks.services;
 import com.sullivankw.LoanBooks.assemblers.*;
 import com.sullivankw.LoanBooks.dtos.LoanBookResponseDto;
 import com.sullivankw.LoanBooks.models.*;
-import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
