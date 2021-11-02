@@ -32,7 +32,7 @@ public class CsvWriterService {
 
             write(sb, "facility_id", "expected_yield");
 
-            yields.forEach(yield -> write(sb, yield.getFacilityId(), yield.getExpectedYield()));
+            yields.forEach(yield -> write(sb, yield.getFacilityId(), (int) yield.getExpectedYield()));
 
             writer.write(sb.toString());
         }

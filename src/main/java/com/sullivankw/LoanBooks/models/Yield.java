@@ -4,20 +4,18 @@ public class Yield {
 
     private int facilityId;
 
-    private float expectedYield; //float seems best to me it rounds better
+    private double expectedYield; //float seems best to me it rounds better
 
-    public Yield(int facilityId, float expectedYield) {
+    public Yield(int facilityId, double expectedYield) {
         this.facilityId = facilityId;
-        int hi = (int) expectedYield; //todo do round until you've grouped all facilities and added, then you can convert to int
         this.expectedYield = expectedYield;
-
     }
 
-    public float getFacilityId() {
+    public int getFacilityId() {
         return facilityId;
     }
 
-    public float getExpectedYield() {
+    public double getExpectedYield() {
         return expectedYield;
     }
 }

@@ -19,9 +19,6 @@ import static java.util.Objects.nonNull;
 public class LoanBookService {
 
     @Autowired
-    private BankAssembler bankAssembler;
-
-    @Autowired
     private FacilityAssembler facilityAssembler;
 
     @Autowired
@@ -44,10 +41,15 @@ public class LoanBookService {
     private static final Logger LOGGER = LogManager.getLogger(LoanBookService.class);
 
     public ResponseDto getAssignments() throws FileNotFoundException {
+
         List<Covenant> covenants = getCovenants();
+
         List<Loan> loans = getLoans();
+
         List<Facility> facilities = getFacilities();
+
         List<Assignment> assignments = new ArrayList<>();
+
         for (Loan loan : loans) {
             Facility facility = getBestRateFacilityRemaining(facilities, covenants, loan);
             if (nonNull(facility)) {
@@ -57,13 +59,16 @@ public class LoanBookService {
                 LOGGER.info("Unable to fund loan %s", loan.getId());
             }
         }
+
         writerService.generateAssignmentCsvFile(assignments);
 
         List<Yield> yields = yieldAssembler.from(assignments, loans, facilities);
 
-        writerService.generateYieldCsvFile(yields);
+        List<Yield> groupedYields = yieldAssembler.group(yields);
 
-        return new ResponseDto(assignments, yields);
+        writerService.generateYieldCsvFile(groupedYields);
+
+        return new ResponseDto(assignments, groupedYields);
     }
 
     private boolean canFundLoan(Facility facility, List<Covenant> covenants, Loan loan) {
