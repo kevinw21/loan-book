@@ -5,6 +5,8 @@ To run:
 1. Open in IntelliJ being sure to import any libraries via Maven
 2. Rt-click in com.sullivankw.LoanBooks.Application and select "Run 'Application.Main()'"
 3. Using curl, postman, browser, etc: http://localhost:8080/loan-book/calculate
+4. The results will be displayed in JSON as well as 2 generated csv files
+
 
 OR, coming soon, use packaged JAR
 
