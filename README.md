@@ -10,7 +10,7 @@ To run:
 
 OR, coming soon, use packaged JAR
 
-1. Navigate to the jar and execute: java -jar LoanBook-1.0.0-spring-boot.jar
+1. Access the file location via command line and execute: java -jar LoanBook-1.0.0.jar
 2. Using curl, postman, browser, etc: http://localhost:8080/loan-book/calculate
 3. The results will be displayed in JSON as well as 2 generated csv files
 (assignments.csv, yields.csv)

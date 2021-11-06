@@ -6,10 +6,13 @@ import com.sullivankw.LoanBooks.models.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
+import org.springframework.util.FileCopyUtils;
 import org.springframework.util.ResourceUtils;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -123,7 +126,6 @@ public class LoanBookService {
     }
 
     private List<Facility> getFacilities() throws IOException {
-        File file = ResourceUtils.getFile("classpath:facilities.csv");
 
         String line;
 
@@ -133,7 +135,14 @@ public class LoanBookService {
 
         List<Facility> facilities = new ArrayList();
 
-        BufferedReader reader = new BufferedReader(new FileReader(file));
+        ClassPathResource classPathResource = new ClassPathResource("facilities.csv");
+
+        byte[] binaryData = FileCopyUtils.copyToByteArray(classPathResource.getInputStream());
+
+        InputStream inputStream = new ByteArrayInputStream(binaryData);
+
+        BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
+
         while (readFile) {
 
             line = reader.readLine();
@@ -156,8 +165,6 @@ public class LoanBookService {
     }
 
     private List<Covenant> getCovenants() throws IOException {
-        File file = ResourceUtils.getFile("classpath:covenants.csv");
-
         String line;
 
         boolean readFile = true;
@@ -166,7 +173,13 @@ public class LoanBookService {
 
         List<Covenant> covenants = new ArrayList();
 
-        BufferedReader reader = new BufferedReader(new FileReader(file));
+        ClassPathResource classPathResource = new ClassPathResource("covenants.csv");
+
+        byte[] binaryData = FileCopyUtils.copyToByteArray(classPathResource.getInputStream());
+
+        InputStream inputStream = new ByteArrayInputStream(binaryData);
+
+        BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
 
         while (readFile) {
 
@@ -190,7 +203,6 @@ public class LoanBookService {
     }
 
     private List<Loan> getLoans() throws IOException {
-        File file = ResourceUtils.getFile("classpath:loans.csv");
 
         String line;
 
@@ -200,7 +212,13 @@ public class LoanBookService {
 
         List<Loan> loans = new ArrayList();
 
-        BufferedReader reader = new BufferedReader(new FileReader(file));
+        ClassPathResource classPathResource = new ClassPathResource("loans.csv");
+
+        byte[] binaryData = FileCopyUtils.copyToByteArray(classPathResource.getInputStream());
+
+        InputStream inputStream = new ByteArrayInputStream(binaryData);
+
+        BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
 
         while (readFile) {
 
