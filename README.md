@@ -7,8 +7,7 @@ To run:
 3. Using curl, postman, browser, etc: http://localhost:8080/loan-book/calculate
 4. The results will be displayed in JSON as well as 2 generated csv files
 
-
-OR, coming soon, use packaged JAR
+OR
 
 1. Access the file location via command line and execute: java -jar LoanBook-1.0.0.jar
 2. Using curl, postman, browser, etc: http://localhost:8080/loan-book/calculate
